@@ -10,7 +10,13 @@ from homeassistant.const import TEMP_CELSIUS
 from homeassistant.helpers.entity import Entity
 from datetime import timedelta
 from homeassistant.helpers.icon import icon_for_battery_level
-from homeassistant.components.sensor import DEVICE_CLASS_BATTERY
+from homeassistant.components.sensor import (
+	SensorDeviceClass,
+	SensorEntity,
+	SensorStateClass,
+	DEVICE_CLASS_BATTERY,
+)
+from homeassistant.const import POWER_WATT
 
 
 DEPENDENCIES = ["hive"]
@@ -49,6 +55,15 @@ async def async_setup_entry(hass, entry, async_add_entities):
     if devices:
         for dev in devices:
             devs.append(HiveSensorEntity(hive, dev))
+
+    """Give the switches the opportunity to create sensors."""
+    devices = hive.deviceList.get("switch")
+
+    if devices:
+        for dev in devices:
+            if dev["hiveType"] == "activeplug":
+                devs.append(HivePlugPower(hive, dev))
+
     async_add_entities(devs, True)
 
 
@@ -302,3 +317,61 @@ class HiveSensorEntity(HiveEntity, Entity):
             s_a.update({"Schedule not active": ""})
 
         return s_a
+
+
+class HivePlugPower(HiveEntity, SensorEntity):
+    """Hive Active Plug Power Sensor."""
+
+    @property
+    def unique_id(self):
+        """Return unique ID of entity."""
+        return self._unique_id + "-currentpower"
+
+    @property
+    def device_info(self):
+        """Return device information."""
+        if self.device["hiveType"] == "activeplug":
+            return {
+                "identifiers": {(DOMAIN, self.device["device_id"])},
+                "name": self.device["device_name"],
+                "model": self.device["deviceData"]["model"],
+                "manufacturer": self.device["deviceData"]["manufacturer"],
+                "sw_version": self.device["deviceData"]["version"],
+                "via_device": (DOMAIN, self.device["parentDevice"]),
+            }
+
+    @property
+    def name(self):
+        """Return the name of this Switch device if any."""
+        return self.device["haName"] + "_current_power"
+
+    @property
+    def native_value(self):
+        """Return the value of the sensor."""
+        return self.device["status"].get("power_usage")
+
+    @property
+    def available(self):
+        """Return if the device is available."""
+        return self.device["deviceData"].get("online")
+
+    @property
+    def device_class(self):
+        """Device class of the entity."""
+        return SensorDeviceClass.POWER
+
+    @property
+    def native_unit_of_measurement(self):
+        """Return the unit of measurement."""
+        return POWER_WATT
+
+    @property
+    def state_class(self):
+        """Return the unit of measurement."""
+        return SensorStateClass.MEASUREMENT
+
+    async def async_update(self):
+        """Update all Node data from Hive."""
+        await self.hive.session.updateData(self.device)
+        self.device = await self.hive.switch.getSwitch(self.device)
+        self.attributes.update(self.device.get("attributes", {}))
