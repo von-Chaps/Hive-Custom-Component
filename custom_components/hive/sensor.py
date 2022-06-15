@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import TEMP_CELSIUS, POWER_WATT
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -13,7 +14,15 @@ from .const import DOMAIN
 PARALLEL_UPDATES = 0
 SCAN_INTERVAL = timedelta(seconds=15)
 DEVICETYPE = {
-    "Battery": {"unit": " % ", "type": SensorDeviceClass.BATTERY},
+    "Battery": {"icon": "mdi:battery", "unit": " % ", "type": SensorDeviceClass.BATTERY},
+    "Heating_Current_Temperature": {"icon": "mdi:thermometer", "unit": TEMP_CELSIUS, "type": SensorDeviceClass.TEMPERATURE},
+    "Heating_Target_Temperature": {"icon": "mdi:thermometer", "unit": TEMP_CELSIUS, "type": SensorDeviceClass.TEMPERATURE},
+    "Heating_State": {"icon": "mdi:radiator", "type": "None"},
+    "Heating_Mode": {"icon": "mdi:radiator", "type": "None"},
+    "Heating_Boost": {"icon": "mdi:radiator", "type": "None"},
+    "Mode": {"icon": "mdi:eye", "type": "None"},
+    "Availability": {"icon": "mdi:check-circle", "type": "None"},
+    "Power": {"unit": POWER_WATT, "type": SensorDeviceClass.POWER},
 }
 
 
